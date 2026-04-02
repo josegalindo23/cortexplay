@@ -1,4 +1,4 @@
-# 🧠 NeuroCinema
+# 🧠 CortexPlay
 
 > An interactive 3D brain visualizer that shows how the human brain responds 
 > to audiovisual stimuli, powered by TRIBE v2 predictions (Meta FAIR, 2026).
@@ -10,9 +10,9 @@
 
 ---
 
-## 🎯 What is NeuroCinema?
+## 🎯 What is CortexPlay?
 
-NeuroCinema visualizes real-time fMRI brain activity predictions as you watch 
+CortexPlay visualizes real-time fMRI brain activity predictions as you watch 
 a video clip. Select a clip, choose a modality (audio / video / text / 
 multimodal), and watch a 3D brain light up — region by region, second by 
 second.
@@ -49,8 +49,8 @@ fMRI responses to naturalistic stimuli (d'Ascoli et al., 2026, Meta FAIR).
 ### Quick Start
 ```bash
 # Clone the repository
-git clone https://github.com/josegalindo23/neurocinema.git
-cd neurocinema
+git clone https://github.com/josegalindo23/cortexplay.git
+cd cortexplay
 
 # Backend setup
 cd backend
@@ -68,7 +68,7 @@ npm run dev
 
 ## 📁 Project Structure
 ```
-neurocinema/
+cortexplay/
 ├── backend/          # FastAPI REST API
 ├── frontend/         # React + Three.js visualizer
 └── docker-compose.yml
