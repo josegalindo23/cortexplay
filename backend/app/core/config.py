@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     TRIBE_CACHE_DIR: str = "./cache/tribev2"
     TRIBE_MODEL_ID: str = "facebook/tribev2"
 
+    # HuggingFace — optional, used for model downloads
+    hf_api_key: str = ""
+
     @property
     def ALLOWED_ORIGINS(self) -> List[str]:
         """Return list of allowed CORS origins."""

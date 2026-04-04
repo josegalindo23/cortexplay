@@ -81,3 +81,8 @@ tribev2.egg-info/
 
 # tribev2 source (external dependency, not our code)
 backend/tribev2/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
