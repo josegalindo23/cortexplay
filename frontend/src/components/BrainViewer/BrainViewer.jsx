@@ -9,7 +9,7 @@
  *   activations: Float32Array of length 20484 — one value per vertex
  */
 
-import { useRef, useEffect, useMemo } from 'react'
+import { useRef, useEffect, useMemo, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -39,7 +39,7 @@ function normalizeActivations(activations) {
 // ---------------------------------------------------------------------------
 // Brain Mesh — renders one hemisphere
 // ---------------------------------------------------------------------------
-function BrainHemisphere({ vertices, faces, activations, side }) {
+function BrainHemisphere({ vertices, faces, activations, side, onVertexClick  }) {
   const meshRef = useRef()
 
   const geometry = useMemo(() => {
@@ -86,6 +86,20 @@ function BrainHemisphere({ vertices, faces, activations, side }) {
       ref={meshRef}
       geometry={geometry}
       position={[offsetX, 0, 0]}
+      onClick={(e) => {
+        e.stopPropagation()
+        const face = e.face
+        if (face && onVertexClick) {
+          const baseVertex = side === 'left' ? 0 : 10242
+          onVertexClick(baseVertex + face.a)
+        }}}
+      onPointerOver={(e) => {
+        e.stopPropagation()
+        document.body.style.cursor = 'pointer'
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'default'
+      }}
     >
       <meshPhongMaterial
         vertexColors
@@ -99,11 +113,11 @@ function BrainHemisphere({ vertices, faces, activations, side }) {
 // ---------------------------------------------------------------------------
 // Scene — contains both hemispheres + auto-rotation
 // ---------------------------------------------------------------------------
-function BrainScene({ surfaceData, activations }) {
+function BrainScene({ surfaceData, activations, onVertexClick, paused }) {
   const groupRef = useRef()
 
   useFrame((state, delta) => {
-    if (groupRef.current) {
+    if (groupRef.current && !paused) {
       groupRef.current.rotation.y += delta * 0.15
     }
   })
@@ -119,12 +133,14 @@ function BrainScene({ surfaceData, activations }) {
         vertices={surfaceData.left.vertices}
         faces={surfaceData.left.faces}
         activations={leftActivations}
+        onVertexClick={onVertexClick}
         side="left"
       />
       <BrainHemisphere
         vertices={surfaceData.right.vertices}
         faces={surfaceData.right.faces}
         activations={rightActivations}
+        onVertexClick={onVertexClick}
         side="right"
       />
     </group>
@@ -134,9 +150,15 @@ function BrainScene({ surfaceData, activations }) {
 // ---------------------------------------------------------------------------
 // BrainViewer — main exported component
 // ---------------------------------------------------------------------------
-export default function BrainViewer({ surfaceData, activations }) {
+export default function BrainViewer({ surfaceData, activations, onVertexClick }) {
+
+  const [hovered, setHovered] = useState(false)
+
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full"
+    onMouseEnter={() => setHovered(true)}
+    onMouseLeave={() => setHovered(false)}
+    >
       <Canvas
         camera={{ position: [0, 0, 120], fov: 45 }}
         gl={{ antialias: true }}
@@ -150,6 +172,8 @@ export default function BrainViewer({ surfaceData, activations }) {
         <BrainScene
           surfaceData={surfaceData}
           activations={activations}
+          onVertexClick={onVertexClick}
+          paused={hovered}
         />
 
         {/* Orbital controls — user can rotate, zoom, pan */}

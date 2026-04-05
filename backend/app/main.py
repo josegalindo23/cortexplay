@@ -11,6 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.routes import brain, clips
 
+from fastapi.staticfiles import StaticFiles
+
 app = FastAPI(
     title="CortexPlay API",
     description=(
@@ -21,6 +23,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+app.mount("/videos", StaticFiles(directory="./data/videos"), name="videos")
 
 # CORS Middleware
 # Allows the React frontend (localhost:5173) to communicate with the API
