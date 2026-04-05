@@ -86,3 +86,6 @@ backend/tribev2/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+
+# Video files
+backend/data/videos/
