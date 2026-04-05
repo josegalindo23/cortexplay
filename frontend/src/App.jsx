@@ -3,6 +3,7 @@ import BrainViewer from './components/BrainViewer/BrainViewer'
 import VideoPlayer from './components/VideoPlayer/VideoPlayer'
 import TimeSeries from './components/TimeSeries/TimeSeries'
 import ModalityToggle from './components/ModalityToggle/ModalityToggle'
+import RGBMap from './components/RGBMap/RGBMap'
 
 const API = 'http://localhost:8000/api'
 const CLIP_ID = 'big_buck_bunny_30s'
@@ -152,7 +153,10 @@ export default function App() {
               <TimeSeries data={timeSeriesData} currentTime={currentTime} />
             </div>
 
-            
+            <p className="text-xs text-gray-600 uppercase tracking-wider mt-4 mb-2">Modality Map (RGB)</p>
+            <div className="rounded border border-gray-800 p-3">
+              <RGBMap activations={activations} />
+            </div>
 
             {/* Activation stats */}
             <p className="text-xs text-gray-600 uppercase tracking-wider mt-4 mb-2">Current Frame</p>
