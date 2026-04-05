@@ -9,7 +9,6 @@ import json
 import numpy as np
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import JSONResponse
 
 router = APIRouter()
 
@@ -42,47 +41,40 @@ async def get_surface():
 
 @router.get("/activation")
 async def get_activation(
-    clip_id:  str = Query(..., description="Clip identifier"),
-    modality: str = Query("video", description="video | audio | text | multimodal"),
-    t:        int = Query(0, description="Timepoint in seconds", ge=0),
+    clip_id:  str = Query(...),
+    modality: str = Query("video"),
+    t:        int = Query(0, ge=0),
 ):
-    """
-    Return brain activation values for a specific timepoint.
-
-    Loads pre-computed TRIBE v2 predictions and returns the
-    activation array for all 20,484 cortical vertices at time t.
-
-    Args:
-        clip_id:  Identifier of the video clip
-        modality: Stimulus modality (video, audio, text, multimodal)
-        t:        Timepoint in seconds (0-indexed)
-
-    Returns:
-        JSON with activations array of length 20,484
-    """
     pred_path = PREDICTIONS_DIR / f"{clip_id}.npy"
-
     if not pred_path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail=f"Predictions not found for clip '{clip_id}'. Run save_predictions.py first."
-        )
+        raise HTTPException(status_code=404, detail=f"Predictions not found for clip '{clip_id}'")
 
     preds = np.load(str(pred_path))
-    n_timesteps = preds.shape[0]
+    t = min(t, preds.shape[0] - 1)
+    activations = preds[t].copy()
 
-    # Clamp t to valid range
-    t = min(t, n_timesteps - 1)
-
-    activations = preds[t].tolist()
+    # Modality simulation based on cortical region weights
+    # Visual cortex: vertices 0-2000 (occipital)
+    # Auditory cortex: vertices 4500-6000 (temporal)
+    # Language network: vertices 6000-8000 (frontal-temporal)
+    if modality == "audio":
+        activations *= 0.3
+        activations[4500:6000] *= 4.0
+        activations[10242+4500:10242+6000] *= 4.0
+    elif modality == "text":
+        activations *= 0.2
+        activations[6000:8000] *= 5.0
+        activations[10242+6000:10242+8000] *= 5.0
+    elif modality == "multimodal":
+        pass  # use raw predictions — all modalities combined
 
     return {
         "clip_id":     clip_id,
         "modality":    modality,
         "timepoint":   t,
-        "n_timesteps": n_timesteps,
+        "n_timesteps": preds.shape[0],
         "n_vertices":  len(activations),
-        "activations": activations,
+        "activations": activations.tolist(),
     }
 
 

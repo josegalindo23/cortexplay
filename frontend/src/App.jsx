@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import BrainViewer from './components/BrainViewer/BrainViewer'
 import VideoPlayer from './components/VideoPlayer/VideoPlayer'
 import TimeSeries from './components/TimeSeries/TimeSeries'
+import ModalityToggle from './components/ModalityToggle/ModalityToggle'
 
 const API = 'http://localhost:8000/api'
 const CLIP_ID = 'big_buck_bunny_30s'
@@ -16,6 +17,7 @@ export default function App() {
   const [error, setError]             = useState(null)
   const [selectedRegion, setSelectedRegion] = useState(null)
   const [timeSeriesData, setTimeSeriesData] = useState(null)
+  const [modality, setModality] = useState('video')
 
   const handleVertexClick = useCallback((vertexId) => {
   fetch(`${API}/brain/region/${vertexId}`)
@@ -34,13 +36,18 @@ export default function App() {
       .catch(e => { setError(e.message); setLoading(false) })
   }, [])
 
-  const fetchActivations = useCallback((t) => {
+  const fetchActivations = useCallback((t, mod = modality) => {
     const laggedT = Math.max(0, t - HEMODYNAMIC_LAG)
-    fetch(`${API}/brain/activation?clip_id=${CLIP_ID}&t=${laggedT}`)
+    fetch(`${API}/brain/activation?clip_id=${CLIP_ID}&modality=${mod}&t=${laggedT}`)
       .then(r => r.json())
       .then(d => setActivations(new Float32Array(d.activations)))
       .catch(e => console.error(e))
-  }, [])
+  }, [modality])
+
+  const handleModalityChange = (mod) => {
+  setModality(mod)
+  fetchActivations(currentTime, mod)
+  }
 
   useEffect(() => {
     if (!loading) fetchActivations(0)
@@ -72,10 +79,12 @@ export default function App() {
           <h1 className="text-base font-bold">🧠 CortexPlay</h1>
           <span className="text-gray-600 text-xs">TRIBE v2 — d'Ascoli et al., 2026</span>
         </div>
-        <div className="text-xs text-gray-500 flex gap-3">
-          <span>stimulus <span className="text-white">{currentTime}s</span></span>
-          <span>brain <span className="text-orange-400">{Math.max(0, currentTime - HEMODYNAMIC_LAG)}s</span></span>
-          <span className="text-gray-700">+{HEMODYNAMIC_LAG}s hemodynamic lag</span>
+        <div className="flex items-center gap-4">
+          <ModalityToggle value={modality} onChange={handleModalityChange} />
+          <div className="text-xs text-gray-500 flex gap-3">
+            <span>stimulus <span className="text-white">{currentTime}s</span></span>
+            <span>brain <span className="text-orange-400">{Math.max(0, currentTime - HEMODYNAMIC_LAG)}s</span></span>
+          </div>
         </div>
       </header>
 
