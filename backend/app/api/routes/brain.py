@@ -9,11 +9,15 @@ import json
 import numpy as np
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query
+from functools import lru_cache
+
 
 router = APIRouter()
 
 SURFACE_PATH     = Path("./data/surface/fsaverage5.json")
 PREDICTIONS_DIR  = Path("./data/predictions")
+PARCELLATION_PATH = Path("./data/regions/parcellation.npy")
+REGIONS_PATH      = Path("./data/regions/regions.json")
 
 
 @router.get("/health")
@@ -96,61 +100,39 @@ async def get_clips():
         "clips": clips
     }
 
+@lru_cache(maxsize=1)
+def load_parcellation():
+    """Load parcellation and regions once, cache in memory."""
+    parcellation = np.load(str(PARCELLATION_PATH))
+    with open(REGIONS_PATH, "r") as f:
+        regions = json.load(f)
+    return parcellation, regions
+
 @router.get("/region/{vertex_id}")
 async def get_region_info(vertex_id: int):
     """
     Return clinical info for the brain region containing a vertex.
-    Uses a simplified mapping based on vertex index ranges.
+    Uses HCP-MMP1.0 parcellation (Glasser et al., 2016, Nature).
+    180 regions per hemisphere, gold standard in neuroimaging.
     """
-    # Simplified HCP region mapping by vertex position
-    # Left hemisphere: 0-10241, Right: 10242-20483
-    hemisphere = "L" if vertex_id < 10242 else "R"
-    local_id = vertex_id if vertex_id < 10242 else vertex_id - 10242
+    if vertex_id < 0 or vertex_id >= 20484:
+        raise HTTPException(status_code=400, detail="vertex_id must be 0-20483")
 
-    # Approximate region based on vertex position
-    region_pct = local_id / 10242
+    parcellation, regions = load_parcellation()
+    region_id = int(parcellation[vertex_id])
+    region = regions.get(str(region_id))
 
-    if region_pct < 0.15:
-        region = {"name": "V1", "full_name": "Primary Visual Cortex",
-                  "description": "Processes basic visual features: edges, orientation, contrast and spatial frequency. First cortical stage of the visual hierarchy.",
-                  "network": "Visual", "brodmann": "BA17"}
-    elif region_pct < 0.25:
-        region = {"name": "V2", "full_name": "Secondary Visual Cortex",
-                  "description": "Integrates simple visual features from V1. Sensitive to illusory contours and figure-ground segregation.",
-                  "network": "Visual", "brodmann": "BA18"}
-    elif region_pct < 0.35:
-        region = {"name": "MT+", "full_name": "Middle Temporal Complex",
-                  "description": "Specialized for visual motion processing. Critical for perceiving moving objects and optical flow.",
-                  "network": "Visual", "brodmann": "BA19"}
-    elif region_pct < 0.45:
-        region = {"name": "A1", "full_name": "Primary Auditory Cortex",
-                  "description": "First cortical stage of auditory processing. Encodes frequency, amplitude and basic sound features.",
-                  "network": "Auditory", "brodmann": "BA41"}
-    elif region_pct < 0.55:
-        region = {"name": "STS", "full_name": "Superior Temporal Sulcus",
-                  "description": "Integrates audiovisual information. Critical for speech perception and biological motion.",
-                  "network": "Language", "brodmann": "BA22"}
-    elif region_pct < 0.65:
-        region = {"name": "IFG", "full_name": "Inferior Frontal Gyrus",
-                  "description": "Broca's area. Core region for language production and syntactic processing.",
-                  "network": "Language", "brodmann": "BA44"}
-    elif region_pct < 0.75:
-        region = {"name": "mPFC", "full_name": "Medial Prefrontal Cortex",
-                  "description": "Involved in social cognition, self-referential processing and narrative comprehension.",
-                  "network": "Default Mode", "brodmann": "BA10"}
-    elif region_pct < 0.85:
-        region = {"name": "PPC", "full_name": "Posterior Parietal Cortex",
-                  "description": "Integrates sensory information for spatial awareness and attention direction.",
-                  "network": "Dorsal Attention", "brodmann": "BA7"}
-    else:
-        region = {"name": "SMC", "full_name": "Sensorimotor Cortex",
-                  "description": "Processes touch, proprioception and motor planning.",
-                  "network": "Somatomotor", "brodmann": "BA1"}
+    if not region:
+        raise HTTPException(status_code=404, detail=f"Region not found for vertex {vertex_id}")
 
     return {
-        "vertex_id": vertex_id,
-        "hemisphere": hemisphere,
-        **region
+        "vertex_id":  vertex_id,
+        "region_id":  region_id,
+        "name":       region["name"],
+        "full_name":  region["full_name"],
+        "hemisphere": region["hemisphere"],
+        "network":    region["network"],
+        "description": region["description"],
     }
 
 @router.get("/timeseries")
