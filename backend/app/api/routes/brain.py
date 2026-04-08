@@ -49,36 +49,28 @@ async def get_activation(
     modality: str = Query("video"),
     t:        int = Query(0, ge=0),
 ):
-    pred_path = PREDICTIONS_DIR / f"{clip_id}.npy"
+    
+    """
+    Return brain activation values for a specific timepoint.
+    Uses real TRIBE v2 predictions per modality.
+    """
+
+    pred_path = PREDICTIONS_DIR / f"{clip_id}_{modality}.npy"
+    if not pred_path.exists():
+        pred_path = PREDICTIONS_DIR / f"{clip_id}.npy"  # fallback to raw predictions
     if not pred_path.exists():
         raise HTTPException(status_code=404, detail=f"Predictions not found for clip '{clip_id}'")
 
     preds = np.load(str(pred_path))
     t = min(t, preds.shape[0] - 1)
-    activations = preds[t].copy()
-
-    # Modality simulation based on cortical region weights
-    # Visual cortex: vertices 0-2000 (occipital)
-    # Auditory cortex: vertices 4500-6000 (temporal)
-    # Language network: vertices 6000-8000 (frontal-temporal)
-    if modality == "audio":
-        activations *= 0.3
-        activations[4500:6000] *= 4.0
-        activations[10242+4500:10242+6000] *= 4.0
-    elif modality == "text":
-        activations *= 0.2
-        activations[6000:8000] *= 5.0
-        activations[10242+6000:10242+8000] *= 5.0
-    elif modality == "multimodal":
-        pass  # use raw predictions — all modalities combined
 
     return {
         "clip_id":     clip_id,
         "modality":    modality,
         "timepoint":   t,
         "n_timesteps": preds.shape[0],
-        "n_vertices":  len(activations),
-        "activations": activations.tolist(),
+        "n_vertices":  preds.shape[1],
+        "activations": preds[t].tolist(),
     }
 
 
@@ -138,10 +130,11 @@ async def get_region_info(vertex_id: int):
 @router.get("/timeseries")
 async def get_timeseries(
     clip_id: str = Query(...),
+    modality: str = Query("video"),
     vertex_id: int = Query(...),
 ):
     """Return activation time series for a specific vertex."""
-    pred_path = PREDICTIONS_DIR / f"{clip_id}.npy"
+    pred_path = PREDICTIONS_DIR / f"{clip_id}_{modality}.npy"
     if not pred_path.exists():
         raise HTTPException(status_code=404, detail="Predictions not found")
 

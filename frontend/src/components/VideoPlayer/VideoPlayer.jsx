@@ -23,7 +23,7 @@ export default function VideoPlayer({ onTimeUpdate, onDurationChange }) {
   return (
     <video
       ref={videoRef}
-      src="http://localhost:8000/videos/big_buck_bunny_30s.mp4"
+      src="http://localhost:8000/videos/big_buck_bunny_30s_video.mp4"
       controls
       autoPlay
       loop
