@@ -4,7 +4,7 @@
  */
 import { useRef, useEffect } from 'react'
 
-export default function VideoPlayer({ onTimeUpdate, onDurationChange }) {
+export default function VideoPlayer({ onTimeUpdate, onDurationChange, src }) {
   const videoRef = useRef()
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export default function VideoPlayer({ onTimeUpdate, onDurationChange }) {
   return (
     <video
       ref={videoRef}
-      src="http://localhost:8000/videos/big_buck_bunny_30s_video.mp4"
+      src= {src || "http://localhost:8000/videos/big_buck_bunny_30s_video.mp4"}
       controls
       autoPlay
       loop

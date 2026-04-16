@@ -4,6 +4,7 @@ import VideoPlayer from './components/VideoPlayer/VideoPlayer'
 import TimeSeries from './components/TimeSeries/TimeSeries'
 import ModalityToggle from './components/ModalityToggle/ModalityToggle'
 import RGBMap from './components/RGBMap/RGBMap'
+import StimulusPanel from './components/StimulusPanel/StimulusPanel'
 
 const API = 'http://localhost:8000/api'
 const CLIP_ID = 'big_buck_bunny_30s'
@@ -100,11 +101,13 @@ export default function App() {
         {/* Right panel — 35% */}
         <div className="w-80 flex-none border-l border-gray-800 flex flex-col">
 
-          {/* Video player */}
+          {/* Stimulus panel */}
           <div className="flex-none h-48 bg-black border-b border-gray-800">
-            <VideoPlayer
+            <StimulusPanel
+              modality={modality}
               onTimeUpdate={handleTimeUpdate}
               onDurationChange={setDuration}
+              currentTime={currentTime}
             />
           </div>
 
